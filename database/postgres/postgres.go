@@ -234,16 +234,16 @@ func (p *Postgres) Close() error {
 // https://www.postgresql.org/docs/9.6/static/explicit-locking.html#ADVISORY-LOCKS
 func (p *Postgres) Lock() error {
 	return database.CasRestoreOnErr(&p.isLocked, false, true, database.ErrLocked, func() error {
-		aid, err := database.GenerateAdvisoryLockId(p.config.DatabaseName, p.config.migrationsSchemaName, p.config.migrationsTableName)
-		if err != nil {
-			return err
-		}
+		// aid, err := database.GenerateAdvisoryLockId(p.config.DatabaseName, p.config.migrationsSchemaName, p.config.migrationsTableName)
+		// if err != nil {
+		// 	return err
+		// }
 
 		// This will wait indefinitely until the lock can be acquired.
-		query := `SELECT pg_advisory_lock($1)`
-		if _, err := p.conn.ExecContext(context.Background(), query, aid); err != nil {
-			return &database.Error{OrigErr: err, Err: "try lock failed", Query: []byte(query)}
-		}
+		// query := `SELECT pg_advisory_lock($1)`
+		// if _, err := p.conn.ExecContext(context.Background(), query, aid); err != nil {
+		// 	return &database.Error{OrigErr: err, Err: "try lock failed", Query: []byte(query)}
+		// }
 
 		return nil
 	})
@@ -251,15 +251,15 @@ func (p *Postgres) Lock() error {
 
 func (p *Postgres) Unlock() error {
 	return database.CasRestoreOnErr(&p.isLocked, true, false, database.ErrNotLocked, func() error {
-		aid, err := database.GenerateAdvisoryLockId(p.config.DatabaseName, p.config.migrationsSchemaName, p.config.migrationsTableName)
-		if err != nil {
-			return err
-		}
+		// aid, err := database.GenerateAdvisoryLockId(p.config.DatabaseName, p.config.migrationsSchemaName, p.config.migrationsTableName)
+		// if err != nil {
+		// 	return err
+		// }
 
-		query := `SELECT pg_advisory_unlock($1)`
-		if _, err := p.conn.ExecContext(context.Background(), query, aid); err != nil {
-			return &database.Error{OrigErr: err, Query: []byte(query)}
-		}
+		// query := `SELECT pg_advisory_unlock($1)`
+		// if _, err := p.conn.ExecContext(context.Background(), query, aid); err != nil {
+		// 	return &database.Error{OrigErr: err, Query: []byte(query)}
+		// }
 		return nil
 	})
 }
@@ -355,35 +355,35 @@ func runesLastIndex(input []rune, target rune) int {
 }
 
 func (p *Postgres) SetVersion(version int, dirty bool) error {
-	tx, err := p.conn.BeginTx(context.Background(), &sql.TxOptions{})
-	if err != nil {
-		return &database.Error{OrigErr: err, Err: "transaction start failed"}
-	}
+	// tx, err := p.conn.BeginTx(context.Background(), &sql.TxOptions{})
+	// if err != nil {
+	// 	return &database.Error{OrigErr: err, Err: "transaction start failed"}
+	// }
 
-	query := `TRUNCATE ` + pq.QuoteIdentifier(p.config.migrationsSchemaName) + `.` + pq.QuoteIdentifier(p.config.migrationsTableName)
-	if _, err := tx.Exec(query); err != nil {
-		if errRollback := tx.Rollback(); errRollback != nil {
-			err = multierror.Append(err, errRollback)
-		}
-		return &database.Error{OrigErr: err, Query: []byte(query)}
-	}
+	// query := `TRUNCATE ` + pq.QuoteIdentifier(p.config.migrationsSchemaName) + `.` + pq.QuoteIdentifier(p.config.migrationsTableName)
+	// if _, err := tx.Exec(query); err != nil {
+	// 	if errRollback := tx.Rollback(); errRollback != nil {
+	// 		err = multierror.Append(err, errRollback)
+	// 	}
+	// 	return &database.Error{OrigErr: err, Query: []byte(query)}
+	// }
 
-	// Also re-write the schema version for nil dirty versions to prevent
-	// empty schema version for failed down migration on the first migration
-	// See: https://github.com/golang-migrate/migrate/issues/330
-	if version >= 0 || (version == database.NilVersion && dirty) {
-		query = `INSERT INTO ` + pq.QuoteIdentifier(p.config.migrationsSchemaName) + `.` + pq.QuoteIdentifier(p.config.migrationsTableName) + ` (version, dirty) VALUES ($1, $2)`
-		if _, err := tx.Exec(query, version, dirty); err != nil {
-			if errRollback := tx.Rollback(); errRollback != nil {
-				err = multierror.Append(err, errRollback)
-			}
-			return &database.Error{OrigErr: err, Query: []byte(query)}
-		}
-	}
+	// // Also re-write the schema version for nil dirty versions to prevent
+	// // empty schema version for failed down migration on the first migration
+	// // See: https://github.com/golang-migrate/migrate/issues/330
+	// if version >= 0 || (version == database.NilVersion && dirty) {
+	// 	query = `INSERT INTO ` + pq.QuoteIdentifier(p.config.migrationsSchemaName) + `.` + pq.QuoteIdentifier(p.config.migrationsTableName) + ` (version, dirty) VALUES ($1, $2)`
+	// 	if _, err := tx.Exec(query, version, dirty); err != nil {
+	// 		if errRollback := tx.Rollback(); errRollback != nil {
+	// 			err = multierror.Append(err, errRollback)
+	// 		}
+	// 		return &database.Error{OrigErr: err, Query: []byte(query)}
+	// 	}
+	// }
 
-	if err := tx.Commit(); err != nil {
-		return &database.Error{OrigErr: err, Err: "transaction commit failed"}
-	}
+	// if err := tx.Commit(); err != nil {
+	// 	return &database.Error{OrigErr: err, Err: "transaction commit failed"}
+	// }
 
 	return nil
 }
@@ -484,7 +484,7 @@ func (p *Postgres) ensureVersionTable() (err error) {
 		return nil
 	}
 
-	query = `CREATE TABLE IF NOT EXISTS ` + pq.QuoteIdentifier(p.config.migrationsSchemaName) + `.` + pq.QuoteIdentifier(p.config.migrationsTableName) + ` (version bigint not null primary key, dirty boolean not null)`
+	query = `CREATE TABLE IF NOT EXISTS ` + pq.QuoteIdentifier(p.config.migrationsSchemaName) + `.` + pq.QuoteIdentifier(p.config.migrationsTableName) + ` (version bigint primary key, dirty boolean)`
 	if _, err = p.conn.ExecContext(context.Background(), query); err != nil {
 		return &database.Error{OrigErr: err, Query: []byte(query)}
 	}
